@@ -1,0 +1,119 @@
+
+---
+title: "ggplot"
+author: "Rodrigo Negrete Pérez"
+date: \today
+
+theme: "CambridgeUS"
+colortheme: 'beaver'
+output: 
+  beamer_presentation:
+    slide_level: 2
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(xtable)
+options(xtable.comment = FALSE)
+```
+
+# Intro a ggplot
+
+## Parte del tidyverse
+
+* ggplot es parte del tidyverse
+* Si bien R tiene gráficas base:
+  + no son tan presonalizazbles
+  + ggplot puede vincular estética a variable
+* Ampliamente utilizado por su sintaxis 
+
+## mtcars
+
+* Usemos la tradicional base de datos de mtcars
+
+```{r, cache=TRUE}
+cars<- mpg
+```
+
+## 
+
+```{r, cache=TRUE, results='asis', echo=FALSE}
+xtable(head(cars))
+```
+
+# Sintaxis
+
+## Sintaxis
+
+```{r, eval=FALSE}
+ggplot(data=<DATA>)+
+  geom_<<funcion>>(mapping= aes(x= <<x>> , y= <<y>> ))
+```
+
+## ggplot()
+
+* ggplot() crea un sistema de coordenadas al que va agregando capas
+
+```{r, eval=FALSE}
+ggplot()
+```
+
+
+##
+
+```{r, echo=F, cache=TRUE}
+ggplot()
+```
+
+## 
+
+* Evidentemente, está vacío: hay que añadir capas
+* El primer argumento es el data frame a utilizar
+* Podemos omitir el data= por solo poner el df
+
+## Geometría
+
+* Podemos añadir una geometría en función del tipo de gráfico que queremos
+* Define cómo las variables se van a mapear a una visualización
+* i.e geom_point() añadiría un gráfico de puntos; geom_line() una línea, etc
+* todas las geometrías incluyen un argumento de mapeo, aes(), que especifica qué variables son las que se van a mapear
+
+## Ejemplo
+
+* Intentemos graficar la relacion que existe entre el tamaño del motor (disp) y la eficiencia(hwy)
+
+```{r, eval=FALSE}
+ggplot(data=cars)+
+  geom_point(mapping = aes(x= displ, y= hwy))
+```
+
+##
+
+```{r, echo=FALSE}
+ggplot(data=cars)+
+  geom_point(mapping = aes(x= displ, y= hwy))
+```
+
+# Mapeos aestéticos
+
+# ggsave()
+
+## ggsave()
+
+* Los gráficos de ggplot() pueden guardarse como cualquier objeto
+* Podemos guardar el nuestra gráfica generada como un archivo de formato de nuestra preferencia con ggsave()
+* Ejecutarlo una y otra vez no genera un nuevo archivo, sino que lo sobreescribe, en caso de no haber cambiado
+* Podemos modificar tamaño o escala
+
+##
+```{r, eval=FALSE}
+ggsave(
+  filename, # nombre para guardar
+  plot = last_plot(), # grafica que va a guardar (ultima pred.)
+  device = NULL, # formato
+  path = NULL, # donde lo va a guardar
+)
+```
+
