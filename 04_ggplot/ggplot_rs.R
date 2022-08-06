@@ -1,124 +1,249 @@
-######
-# ggplot
+###### 
+## ggplot
 ######
 
-#Cargamos librerias
+rm(list = ls())
+
+## Cargamos paquetes
 library(tidyverse)
 
-#Cambiamos el directorio
-setwd('C:/Users/rodri/OneDrive - INSTITUTO TECNOLOGICO AUTONOMO DE MEXICO/Labs MIA/ggplot')
+## Trabajemos con mtcars
 
-# Descargamos las bases de datos
-min_within<-readxl::read_excel('WhoGov_within_V1.1.xlsx', 
-                               guess_max=999999999)
-
-min_cross<-readxl::read_excel('WhoGov_crosssectional_V1.1.xlsx', guess_max=9999999)
-
-## Merge ##
-# Hay muchas maneras de hacer el merge, pero intentemos uno por izquierda
-
-min<-left_join(min_within, min_cross,
-               by=c('year'='year', 'country_name'='country_name'))
-
-# aparece un error los anios son de tipo diferente, podemos corregirlo facilmente
-
-#convirtamos ambos a numericos
-min_cross$year<-as.numeric(min_cross$year)
-min_within$year<-as.numeric(min_within$year)
-
-# Intentemos de nuevo el merge
-min<-left_join(min_within, min_cross,
-               by=c('year'='year', 'country_name'='country_name')) 
+cars<- mpg
 
 
-# Recordemos como hicimos para crear el df #
+## Graficando la relación entre tamaño y eficiencia
+ggplot(data=cars)+
+  geom_point(mapping = aes(x= displ, y= hwy))
 
-min<- min %>% mutate(
-  female=ifelse(gender=='Female',1,0))
+# Podemos guardar las gráficas como objetos
+figura.1<- ggplot(data=cars)+
+  geom_point(mapping = aes(x= displ, y= hwy))
 
-min_grouped<- min %>% 
-  group_by(year) %>% 
-  summarise(
-    fem_mean.year=mean(female,
-                       na.rm=T) )
+# Si queremos que lo muestre, lo podemos poner entre paréntesis
 
-# Grafiquemos con ggplot #
-# Este seria el grafico mas rudimentario
-ggplot(data=min_grouped,
-       aes(x=year, y=fem_mean.year))+
-  geom_line() 
+(figura.1<- ggplot(data=cars)+
+    geom_point(mapping = aes(x= displ, y= hwy)))
 
-#podemos aniadir esteticas gradualmente
-ggplot(data=min_grouped,
-       aes(x=year, y=fem_mean.year))+
-  geom_line()+
-  ggtitle('Porcentaje de Mujeres en el gabinete por año')+
-  xlab('Año')+
-  ylab('')
+# Una vez creada la grafica, podemos añadir elementos
 
-# De hecho, podemos aniadir figuras, como una linea horizontal
+(ggplot(data=cars)+
+  geom_point(mapping = aes(x= displ, y= hwy))+
+  xlab('Volumen Motor (l)')+
+  ylab('Millas por galón')+
+  ggtitle('Eficiencia')+
+  theme_minimal()+
+    coord_flip())
+  
+# Si ya tenemos la gráfica como objeto guardado, basta con poner el nombre del objeto seguido de los elementos
 
-ggplot(data=min_grouped,
-       aes(x=year, y=fem_mean.year))+
-  geom_line()+
-  ggtitle('Porcentaje de Mujeres en el gabinete por año')+
-  xlab('Año')+
-  ylab('')+
-  geom_hline(yintercept = with(min_grouped, mean(fem_mean.year)), color='red')
+(figura.1+ 
+    xlab('Volumen Motor (l)')+
+    ylab('Millas por galón')+
+    ggtitle('Eficiencia')+
+    theme_minimal()+
+    coord_flip())
 
-## Datos agrupados ##
 
-# Despues del merge tenemos informacion de regimen. Queremos graficar agrupando por regimen. Primero necesitamos crear el df
+### Parte de dplyr ###
 
-min_regime<-min %>% group_by(system_category) %>% summarise(
-  fem.mean_regime=mean(female,
-                       na.rm=T)
+# Podemos concatenar ggplot usando la pipa %>%. En este caso, omitimos el argumento de df y ponemos solo la aestetica dentro de ggplot()
+# Por ejemplo repliquemos la gráfica, pero solo para los compactos
+
+(figura.2<- cars %>% 
+    filter(class=='compact') %>% 
+    ggplot(aes(x=displ, y =hwy))+
+    geom_point())
+
+
+### Aestetica ###
+
+# Podemos vincular a una caracteristica estetica del grafico a una variable de factor, que, a la postre, va a asignar un nivel a cada categoria
+
+(aes<- ggplot(data=cars)+
+    geom_point(mapping = aes(x= displ, y= hwy,
+                             color=class)))
+
+# Podemos haer lo mismo con formas
+
+(aes.2<- ggplot(data=cars)+
+    geom_point(mapping = aes(x= displ, y= hwy, 
+                             color=class, shape=class)))
+
+## Dentro vs fuera de aes() ##
+
+# Para especificar que queremos un color en particular ponemos el argumento dentro de la geometria pero fuera de aes(). No vinculamos una cuestión estética con una variable, sino que solo forzamos que la figura sea un color especifico
+
+(fuera_aes<- ggplot(data=cars)+
+    geom_point(mapping = aes(x= displ, y= hwy) , 
+               color='red'))
+
+## aplha ##
+
+(aes.3<- ggplot(data=cars)+
+    geom_point(mapping = aes(x= displ, y= hwy, 
+                             color=class, alpha=class)))
+
+## Escalas de colores 
+
+# Descarguemos la paleta Viridis
+
+library(viridis)
+
+(scale_color <- ggplot(data=cars)+
+    geom_point(mapping = aes(x= displ, y= hwy,
+                             color=class))+
+    scale_color_viridis(discrete = T, 
+                        option = 'magma'))
+
+### Facets ###
+
+# Podemos dividir los facets, haciendo una grafica para cada categoria
+
+# Tenemos que especificar la formula con la variable para la que queremos descomponer la grafica antcipiada por ~ 
+
+(facets <- ggplot(cars)+
+    geom_point(mapping = 
+                 aes(x= displ, y= hwy))+
+    facet_wrap(~ class, nrow = 2))
+
+# Podemos descomponer en varias variables especificando en la forumla
+
+(facets <- ggplot(cars)+
+    geom_point(mapping = 
+                 aes(x= displ, y= hwy))+
+    facet_wrap(cyl ~ class))
+
+#### Otra sintaxis ####
+
+# Podemos omitir cosas como mapeo x y y 
+# Podemos incluir la aestetica en ggplot() pero el resto de los argumentos de la geometria siguen especificandose dentro de la geometria
+
+(figura.1.2 <- ggplot(cars, 
+                      aes(displ, hwy, color= class))+
+   geom_point())
+
+#### Geometrías ###
+
+## geom_smooth() 
+# aniade linea de regresion e intervalos de confianza
+
+(smooth <- ggplot(cars)+
+    geom_smooth(mapping = aes(
+      x=displ, y= hwy,
+      linetype= drv, color=drv
+    )))
+
+## Múltiples geometrías ##
+
+# Con la sintaxis alternativa es muy snecillo aniadir multiples geometrias
+# Solo especificamos las cosas comunes en ggplot()
+
+
+(mult_geom <- ggplot(cars, 
+                     aes(displ, hwy, 
+                         color= drv, linetype=drv))+
+    geom_point()+
+    geom_smooth())
+
+# Podemos jugar con las opciones
+
+(mult_geom.2 <- ggplot(mpg,
+                       aes(displ, hwy))+
+    geom_point(aes(color=class))+
+    geom_smooth(data= filter(mpg,
+                             class=='subcompact'), color='red'))
+
+
+
+
+## Grafico de barras ##
+
+# su stat default es count
+
+(bar <- ggplot(cars)+
+  geom_bar( aes(class)))
+  
+
+# Creemos un df para hacer el grafico de barras
+
+cars_count <- cars %>% 
+  group_by(class) %>% 
+  summarise(n=n())
+
+# podemos hacer lo mismo, pero especificando las variables ya hechas
+
+# stat= 'idenity'
+
+(cars_count <- cars %>% 
+  group_by(class) %>% 
+  summarise(n=n()) %>% 
+  ggplot(aes(class, n))+
+  geom_bar(stat = 'identity'))
+
+## Gráfico de barras de proporciones
+
+(bar_prop <- ggplot(cars)+
+    geom_bar(aes(class, y=..prop..,
+                 group=1)))
+
+## fill vs color ##
+
+(bar_color <- ggplot(cars)+
+    geom_bar(aes(class,
+                 color=drv)))
+
+(bar_fill <- ggplot(cars)+
+    geom_bar(aes(class,
+                 fill=drv)))
+
+## position = ' ' ##
+
+(bar_position_fill <- ggplot(cars)+
+    geom_bar(aes(class,
+                 fill=drv), position='fill'))
+
+(bar_position_dodge <- ggplot(cars)+
+    geom_bar(aes(class,
+                 fill=drv), position='dodge'))
+
+
+#### Histograma y densidad ####
+
+# para generar el df
+
+set.seed(2022)
+
+n <- 100
+mean_h <- 30000
+mean_m <- 24000
+sd_h <- 3000
+sd_m <- 5000
+
+
+salarios <- tibble(
+  id=seq(n),
+  sexo= factor(rep(c('m','h'), each= n/2)),
+  salario= round(c(rnorm(n/2, mean_m, sd_m),
+                   rnorm(n/2, mean_h, sd_h)))
 )
 
-# Esta vez queremos hacer un grafico de barras
 
-ggplot(min_regime,
-       aes(system_category, fem.mean_regime,
-           fill=system_category))+
-  geom_bar(stat = 'identity')+ #stat=identity es para que no se apilen las barras
-  theme_minimal() # theme cambia el estilo: hay varias opciones
 
-# notamos que las letras se apilan, asi que busque en internet como hacer para cambiar su angulo
+# Densidad con línea vertical
 
-ggplot(min_regime,
-       aes(system_category, fem.mean_regime,
-           fill=system_category))+
-  geom_bar(stat = 'identity')+
-  xlab('')+
-  theme_minimal()+
-  theme(axis.text.x = element_text(angle=40, hjust=1),
-        panel.grid.major.y = element_line())
+(density <- ggplot(salarios,
+                   aes(salario))+
+    geom_density()+
+    geom_vline(aes(xintercept=mean(salario))))
 
-# generemos algunos datos para las siguientes graficas
+# si queremos distinguir por sexo
 
-set.seed(2020)
-x<- rnorm(1000, 5, 2)
-y<-1.5*x+.5*x^2+ rnorm(10000,50,60)
-df<-data.frame(x,y)
-head(df)
+(density_group <- ggplot(salarios,
+                   aes(salario, color= sexo))+
+    geom_density()+
+    geom_vline(aes(xintercept=mean(salario)),
+               color='red'))
 
-## Scatterplot ##
 
-ggplot(df, aes(x,y))+
-  geom_point(alpha=.2)
 
-## geom_smoot() ##
-
-ggplot(df, aes(x,y))+
-  geom_point(alpha=.2)+
-  geom_smooth(method='lm')
-
-## Densidad ##
-
-ggplot(df)+
-  geom_density(aes(x))
-
-## Histograma ##
-
-ggplot(df)+
-  geom_histogram(aes(x), bins=100)
