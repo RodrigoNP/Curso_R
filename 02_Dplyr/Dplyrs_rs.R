@@ -22,6 +22,7 @@ library(tidyverse)
  # data()
 
 # Guardamos las bases de datos
+
 cars<- mtcars
 
 sueño<- sleep
@@ -53,7 +54,7 @@ presidencial<-presidencial %>%
          lista_nominal=LISTA_NOMINAL_CASILLA)
 
 ## mutate() 
-# Se utiliza para añadir variables
+# Se utiliza para aniadir variables
 
 presidencial<- presidencial %>% 
   mutate(participacion=votos/
