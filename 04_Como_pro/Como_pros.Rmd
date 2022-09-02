@@ -13,11 +13,9 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "C:/Users/rodri/OneDrive - INSTITUTO TECNOLOGICO AUTONOMO DE MEXICO/Curso_R/04_Como_pro")
 ```
 
-```{r, include=FALSE}
-setwd('C:/Users/rodri/OneDrive - INSTITUTO TECNOLOGICO AUTONOMO DE MEXICO/Labs MIA/05_Como_pros')
-```
 
 # Intro
 
@@ -133,6 +131,14 @@ if(length(new.packages)) install.packages(new.packages,
                                           dependencies=TRUE)
 ```
 
+# Proyectos
+
+## Usen proyectos
+
+* Un solo proyecto involucra mucho código
+* Aprendan a usar proyectos para vincular todos los arhivos, el historial y lo que se guarda en su espacio de trabajo
+* Vinculen su proyecto a su carpeta de Code
+* Cuando abran el proyecto (seleccionando el ícono raro), se abrirán todos los archivos relacionados
 
 # R Markdown
 
@@ -372,13 +378,15 @@ Mis recomendaciones para estos escritos:
 ##
 
 * Una vez que ya tengan su Rscript, hagan un documento Rmarkdown. 
-  + Cambien la display option predeterminada a echo=F
+  + Usen la funcion rara de knit para que su output se encuentr en la carpeta que desean
+  + Cambien la display option predeterminada a echo=F, warning= F, message= F
   + Citen su Rscript con source() en un chunk: include=F, cache=T
   + Hagan su escrito e incorporen código solo para llamar lo que necesiten, ya sea inline code o chunks
 
 * Para tablas de regresión en stargazer:
-  + Selecciona el type='latex' 
+  + dentro de stargazer  type='latex' 
   + En las display options del chunk: results='asis' 
+  + dentro de stargazer header= FALSE
   
   
 

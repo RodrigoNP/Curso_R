@@ -5,34 +5,126 @@ date: "`r Sys.Date()`"
 output: pdf_document
 knit: (function(inputFile, encoding) {
   rmarkdown::render(inputFile, encoding = encoding, 
-  output_dir = 'C:/Users/rodri/OneDrive - INSTITUTO TECNOLOGICO AUTONOMO DE MEXICO/11 Semestre') })
+  output_dir = 'C:/Users/rodri/OneDrive - INSTITUTO TECNOLOGICO AUTONOMO DE MEXICO/Curso_R/04_Como_pro') })
 
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_knit$set(root.dir = "C:/Users/rodri/OneDrive - INSTITUTO TECNOLOGICO AUTONOMO DE MEXICO/Curso_R/02_Dplyr")
+library(tidyverse)
+library(stargazer)
 
 ```
 
+# YAML
+
+En el preámbulo podemos especificar algunas cosas, como el título, el formato del output etc. De suma importancia es que pueden cambiar el path a donde va a escupir su archivo. Si añaden 
+
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding, 
+  output_dir = 'PATH') })
+  
+# Setup chunk
+
+El primer chunk (pedazo de código) es donde especificamos algunas opciones. Es aquí en donde tenemos que cambiar el directorio de trabajo si vamos a descargar archivos a lo largo del trabajo. Aquí tambien cargamos librerías
+
+# Encabezado
+
+Podemos poner cualquier tipo de texto. Lo que no esté encerrado en chunks se interpretará como texto. 
 
 
+# Imagen
 
-## R Markdown
+Insertamos imágenes con el comando  precedido de un sigo de exclamación incial ['Caption'](path). En lugar de caption pongan la etiqueta de su imagen. En path va la dirección de la imagen
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+# Ecuaciones
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+Markdown entiende la sintaxis de latex para las matemáticas. Si quieres las ecuaciones dentro del texto se encierran entre '$'. Por ejemplo 
 
-```{r cars}
-summary(cars)
+El teorema de pitágoras es $ a^2 + b^2 =c^2$. No olviden poner los $ cuando vayan a usar cualquier símbolo matemático, se ve más bonito. 
+
+Pueden poner una ecuación centrada si ponen *backward slash  [ backward slash]*. Por ejemplo
+
+\[ y_i = \alpha + \beta xi + \varepsilon_i\]
+
+
+# Código
+
+Para decirle a Rmarkdown que lo que viene es código necesitamos especificarlo.  La primera opción es poniendo el código dentro del texto con `r `. R interpreta que todo lo que va después de la R es código y lo ejecuta Por ejemplo:
+
+Dos más dos es igual a `r 2+2`
+
+La segunda opción es usar un chunk.
+
+# Chunk 
+
+Podemos insertar chunks con Ctrl+ Alt + i
+
+Todo lo que va dentro del Chunk se va a leer como código 
+
+```{r Primeros pasos, echo=TRUE, include=TRUE, warning=TRUE}
+2+2
 ```
 
-## Including Plots
+Podemos nombrar a los chunks después de la r. Podemos poner las display options si después de la r (o del título). Ponemos una coma. Podemos poner varias display options separadas por coma. En general usaremos echo= F
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r ejemplo display, echo= FALSE }
+2+2
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+# Gráficas
+
+Para incluir gráficas las podemos crear en un chunk. Primero creemos algo que graficar
+
+```{r, echo=TRUE}
+x <- rnorm(100)
+y<- x^2
+
+data <- data.frame(x,y)
+```
+
+```{r, echo=FALSE}
+(ggplot(data,
+        aes(x,y))+
+   geom_point())
+```
+
+# Regresiones 
+
+Tendremos que combinar el paquete stargazer con la display option resusults='asis'. Genermos nuestros datos
+
+```{r, echo=TRUE}
+x <- rnorm(100)
+y <- 5 + 4* x + rnorm(100, 4, 3)
+
+reg_data <- data.frame(x,y)
+```
+
+Creemos nuestro modelo lineal
+
+```{r, echo=TRUE}
+modelo <- lm( y ~ x ,
+              data = reg_data)
+```
+
+Usemos el paquete stargazer. El primer argumento es el modelo. En nuestro caso, se llama modelo: es el que acabamos de guardar. Incluyamos el argumento type='latex'
+
+```{r}
+stargazer(modelo,
+          type = 'latex')
+```
+
+Markdown entiende latex, lo que queda es cambiar la display option a results= 'asis'
+
+```{r, results='asis'}
+stargazer(modelo,
+          type = 'latex')
+```
+Notamos que nos sale un anuncio feo. Podemos retirar ese anuncio con una opción con el argumento header= FALSE. 
+
+```{r, results='asis'}
+stargazer(modelo,
+          type = 'latex',
+          header = FALSE)
+```
