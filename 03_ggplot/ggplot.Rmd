@@ -117,7 +117,8 @@ ggplot(data=cars)+
   xlab('Volumen Motor (l)')+
   ylab('Millas por galón')+
   ggtitle('Eficiencia')+
-  theme_minimal()
+  theme_minimal()+
+  coord_flip()
 ```
 
 ##
