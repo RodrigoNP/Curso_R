@@ -1,0 +1,52 @@
+---
+title: "Empirical Industrial Organization Problem Set 1"
+author: "Rodrigo Negrete Pérez"
+date: "`r Sys.Date()`"
+output: pdf_document
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding, 
+  output_dir = 'C:/Users/rodri/OneDrive - INSTITUTO TECNOLOGICO AUTONOMO DE MEXICO/11 Semestre/Orga_ Industrial_ Empirica/Problem_set_1/Docs') })
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(message =  FALSE)
+knitr::opts_chunk$set(warning =  FALSE)
+knitr::opts_chunk$set(cache =  TRUE)
+library(stargazer)
+library(xtable)
+options(xtable.comment = FALSE)
+```
+
+```{r Importando, include=FALSE}
+source('C:/Users/rodri/OneDrive - INSTITUTO TECNOLOGICO AUTONOMO DE MEXICO/11 Semestre/Orga_ Industrial_ Empirica/Problem_set_1/Code/00_MASTER.R')
+```
+
+
+# Aggregate Data
+
+## Market Shares
+
+Una pequeña muestra de los Market shares.
+
+```{r, results='asis', cache=TRUE, echo=FALSE}
+xtable(head(market_shares %>% 
+              select(type: market_share)))
+```
+
+Estimando el modelo con OLS se obtienen los siguientes resultados
+
+```{r, results='asis'}
+stargazer(ols_model,
+          type= 'latex',
+          header = FALSE)
+```
+
+Estimando el modelo con 2SLS se obtienen los siguientes resultados
+
+```{r, results='asis'}
+stargazer(iv_model,
+          type= 'latex',
+          header = FALSE)
+```
+

@@ -1,0 +1,483 @@
+---
+title: "AME PS2 2021"
+author: "Hector M. Correa 180115"
+date: "2022-08-23"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r import libraries}
+
+install.packages("haven")
+library(haven)
+
+install.packages("dplyr")
+library(dplyr)
+
+```
+
+```{r Test}
+
+```
+
+
+
+```{r import data}
+
+
+##################### ELIMINATE SCHOOLS THAT ARE NEVER CHOSEN
+
+#read_dta()
+myData <- read_dta("C:\\Users\\Hector Correa\\Documents\\RA\\TA session 1\\data_ps2.dta")
+View(myData)
+
+#summary(myData)
+
+```
+
+
+
+
+```{r Find schools that were not chosen}
+#Check schools that are not chosen:
+
+#check non chosen schools in market 4
+#test1 <- myData[myData[,"market"] == 4,]
+
+#check non chosen schools in market 5
+#test2 <- myData[myData[,"market"] == 5,]
+
+
+#Find the rows per school such that they were not chosen
+#not chosen: schoolid = 201, 227, 264, 267, 2416, 3766
+
+#which(#myData donde es el schoolid = # de la escuela)
+
+theRows1 <- which(myData$schoolid == 201)
+theRows2 <- which(myData$schoolid == 227)
+theRows3 <- which(myData$schoolid == 264)
+theRows4 <- which(myData$schoolid == 267)
+theRows5 <- which(myData$schoolid == 2416)
+theRows6 <- which(myData$schoolid == 3766)
+
+c()
+
+eliminateRows <- c(theRows1, theRows2, theRows3, theRows4, theRows5, theRows6)
+
+#myData <- myData[-eliminateRows,]
+
+
+myData2 <- myData[-eliminateRows,]
+
+```
+
+
+```{r Create CSV for later use}
+
+#Create a csv file to use later in Matlab
+
+# pipe %>% A esta varaible, aplica la función siguiente
+#select() elegir columnas específicas
+
+writeData <- myData2 %>%
+  select("market", "schoolid", "studentid", "price", "quality", "rural", "laica", "pub", "jec", "distance", "choice", "outside")
+
+#write.scv()
+write.csv(writeData, "C:\\Users\\Hector Correa\\Documents\\RA\\TA session 1\\individual_data.csv", row.names = FALSE)
+
+```
+
+
+```{r organize by market and school}
+
+#Reduce data frame to specific data for the market shares and variables to be 
+#used later on
+
+#Seleccionar las variables relevantes para los market shares y demás preguntas de la sección
+data_market_share <- myData2 %>%
+  select("market", "schoolid", "studentid", "choice", "price", "quality", "rural","laica", "pub", "jec", "v_u", "porc_zona", "share_prio")
+View(data_market_share)
+
+```
+
+```{r Aggregate the data}
+sharesByMarket <- data.frame()
+
+
+for (i in 1:5){
+  
+  #Work with an individual market at a time
+  #Agarrar el mercado i
+  
+  mkt <- data_market_share[data_market_share[,"market"] == i,]
+  
+  #Find the unique values of the schoolid
+  uniqueSchools <- mkt[,"schoolid"] %>%
+    unique()
+  
+  #Find the unique values of the studentid
+  uniqueStudent <- mkt[,"studentid"] %>%
+    unique()
+  
+  #Get the number of unique schools and students
+  nSchools <- dim(uniqueSchools)[1]
+  nStudents <- dim(uniqueStudent)[1]
+  
+  #Get a count of how many times each school was chosen
+  #This is the KEY
+  schoolsChosen <- mkt[mkt[,"choice"] == 1,] %>%
+    count(schoolid)
+
+  #colnames()
+  colnames(schoolsChosen) <- c("schoolid", "timesChosen")
+  
+  
+  #La función mutate aplica diferentes operaciones a las columnas
+  #del arreglo (dataframe)
+  schoolsChosen <- schoolsChosen %>%
+    mutate(share = timesChosen / nStudents)
+  
+  #Create a combined data frame with all the market share information
+  
+  cbind()
+  
+  marketShare <- cbind(rep(i,nSchools), schoolsChosen)
+  colnames(marketShare) <- c("market", "schoolid", "timesChosen","share")
+  #Calculate Y = ln(skt) - ln(s0t)
+  outsideShare <- log(marketShare[1,"share"])
+  marketShare <- marketShare %>%
+    mutate(Y = log(share) - outsideShare)
+  
+  #Continue adding on to a single data frame all the data per each market
+  sharesByMarket <- rbind(sharesByMarket,marketShare)
+}
+
+
+```
+
+
+```{r Simplify include shares in market share data}
+
+#Pueden eliminar con [,-schoolid]
+data_simplified <- data_market_share %>%
+  select("market", "schoolid", "price", "quality", "rural","laica", "pub", "jec",
+         "v_u", "porc_zona", "share_prio") %>%
+  group_by(schoolid) %>%
+  distinct()
+
+View(data_simplified)
+
+#Bind the market share by each market with the simplified data
+names <- colnames(data_simplified)
+data_simplified <- cbind(data_simplified,sharesByMarket[,"Y"])
+colnames(data_simplified) <- c(names, "Y")
+
+
+```
+
+```{r OLS regression}
+
+#lm(Var dep ~ varInd + varInd2 +0, data = ???)
+
+OLS_model <- lm(Y ~ price + quality + laica + pub + jec, data = data_simplified)
+summary(OLS_model)
+
+# +0 to eliminate the constant
+#Here it would show up that there are Y values defined as -Inf
+#Could then search for which rows had -Inf and then extract the associated
+#schoolid
+
+```
+
+```{r 2SLS regression}
+
+#install.packages("ivreg")
+library(ivreg)
+
+#general 2SLS structure:
+#model <- ivreg(DepVar ~ sum other exogenous var | sum endogenous var | sum instruments)
+
+#price and quantity endogenous | first use v_u, porc_zona, share_prio
+
+SLSmodel1 <- ivreg(Y ~ laica + pub + jec | price + quality | v_u + porc_zona + share_prio, data = data_simplified)
+
+summary(SLSmodel1)
+
+```
+
+```{r}
+
+sumRural = sum(data_simplified$rural)
+sumLaica = sum(data_simplified$laica)
+sumPub = sum(data_simplified$pub)
+sumJec = sum(data_simplified$jec)
+
+data_simplified2 <- data_simplified %>%
+  mutate(compRural = sumRural - rural,
+         compLaica = sumLaica - laica,
+         compPub = sumPub - pub,
+         compJec = sumJec - jec)
+
+View(data_simplified2)
+
+#Estimate model
+
+TSLS_model2 <- ivreg(Y ~ laica + pub + jec | price + quality | compRural + compLaica + compPub + compJec, data = data_simplified2)
+
+summary(TSLS_model2)
+#Note NA usually refers to a variable that is linearly related to another
+
+```
+
+```{r testing}
+test <- which(data_simplified$Y == -Inf)
+data_simplified[test,]
+```
+
+
+
+
+
+# DO NOT USE
+
+```{r INITIAL Aggregate the data}
+sharesByMarket <- data.frame()
+
+for (i in 1:5){
+  
+  #Work with an individual market at a time
+  mkt <- data_market_share[data_market_share[,"market"] == i,]
+  
+  #Find the unique values of the schoolid
+  uniqueSchools <- mkt[,"schoolid"] %>%
+    unique()
+  
+  #Find the unique values of the studentid
+  uniqueStudent <- mkt[,"studentid"] %>%
+    unique()
+  
+  #Get a count of how many times each school was chosen
+  schoolsChosen <- mkt[mkt[,"choice"] == 1,] %>%
+    count(schoolid)
+  
+  #Get the number of unique schools and students
+  nSchools <- dim(uniqueSchools)[1]
+  nStudents <- dim(uniqueStudent)[1]
+  
+  #Add a column for how many times a school is chosen
+  uniqueSchools <- uniqueSchools %>%
+    mutate(timesChosen = c(rep(0,nSchools)))
+  
+  
+  
+  for (k in 1:dim(schoolsChosen[1])){
+    s_id <- as.numeric(schoolsChosen[k,1])
+    timesChosen <- as.numeric(schoolsChosen[k,2])
+    schoolRow <- uniqueSchools[uniqueSchools[,"schoolid"] == s_id,] 
+    schoolRow[1,2] <- timesChosen
+    
+    rowIndex <- which(uniqueSchools$schoolid == s_id)
+    
+    uniqueSchools[rowIndex,] <- schoolRow
+  
+  }
+  
+  marketShare <- cbind(rep(i,nSchools), uniqueSchools)
+  colnames(marketShare) <- c("market", "schoolid", "timesChosen")
+  marketShare <- marketShare %>%
+    mutate(share = timesChosen / nStudents)
+  
+  #Calculate Y = ln(skt) - ln(s0t)
+  
+  outsideShare <- log(marketShare[1,"share"])
+  
+  marketShare <- marketShare %>%
+    mutate(Y = log(share) - outsideShare)
+  
+  sharesByMarket <- rbind(sharesByMarket,marketShare)
+}
+```
+
+```{r USED TO FIND WHICH SCHOOLS WEREN'T CHOSEN | DO NOT USE}
+
+data_simplified <- data_market_share %>%
+  select("market", "schoolid", "price", "quality", "rural","laica", "pub", "jec",
+         "v_u", "porc_zona", "share_prio") %>%
+  group_by(schoolid) %>%
+  distinct()
+View(data_simplified)
+
+#Bind the market share by each market with the simplified data
+names <- colnames(data_simplified)
+data_simplified <- cbind(data_simplified,sharesByMarket[,"Y"])
+colnames(data_simplified) <- c(names, "Y")
+
+
+#Find rows with -Inf
+eliminate <- which(data_simplified$Y == -Inf)
+
+data_simplified <- data_simplified[-eliminate,]
+```
+
+```{r sum of competitor characteristics}
+
+#obs_chars <- c("rural", "laica", "pub", "jec")
+
+total_obs_chars <- data_simplified %>%
+  data.frame() %>%
+  select("rural", "laica", "pub", "jec") %>%
+  sum()
+
+data_simplified2 <- data_simplified %>%
+  mutate(sumCompetitorChars = total_obs_chars - (rural + laica + pub + jec))
+
+View(data_simplified2)
+
+#Estimate model
+
+TSLS_model2 <- ivreg(Y ~ laica + pub + jec | price + quality | sumCompetitorChars, data = data_simplified2)
+
+summary(TSLS_model2)
+```
+
+```{r validation for the number of market shares}
+
+
+#Validation
+# test <- count(sharesByMarket, market)
+# compare <- data_market_share %>%
+#   select("market", "schoolid")
+
+
+# # m1 <- compare[compare[,"market"] == 1,]
+# m2 <- compare[compare[,"market"] == 2,]
+# m3 <- compare[compare[,"market"] == 3,]
+# m4 <- compare[compare[,"market"] == 4,]
+# m5 <- compare[compare[,"market"] == 5,]
+# 
+# m1 <- m1[,"schoolid"] %>%
+#   unique()
+# 
+# m2 <- m2[,"schoolid"] %>%
+#   unique()
+# 
+# m3 <- m3[,"schoolid"] %>%
+#   unique()
+# 
+# m4 <- m4[,"schoolid"] %>%
+#   unique()
+# 
+# m5 <- m5[,"schoolid"] %>%
+#   unique()
+
+```
+
+```{r initial basic idea}
+
+# #Generate data per each market
+# m1 <- data_market_share[data_market_share[,"market"] == 1,]
+# View(m1)
+# #Count how many unique school there are in its respective market
+# schools <- m1[,"schoolid"] %>%
+#   unique()
+# View(schools)
+# 
+# #See how many times each school was chosen
+# #Generate a df that only has the info for a school chosen
+# schoolsChosen <- m1[m1[,"choice"] == 1,]
+# View(schoolChoice)
+# #Count how many times each school was chosen
+# choice <- schoolChoice %>%
+#   count(schoolid)
+# View(choice)
+
+
+
+```
+
+```{r Individual for loop for market shares}
+
+# 
+# ###########################################################################
+# 
+# mkt <- data_market_share[data_market_share[,"market"] == 4,]
+# 
+# uniqueSchools <- mkt[,"schoolid"] %>%
+#   unique()
+# 
+# 
+# uniqueStudent <- mkt[,"studentid"] %>%
+#   unique()
+# 
+# schoolsChosen <- mkt[mkt[,"choice"] == 1,] %>%
+#   count(schoolid)
+# 
+# nSchools <- dim(uniqueSchools)[1]
+# nStudents <- dim(uniqueStudent)[1]
+# 
+# uniqueSchools <- uniqueSchools %>%
+#   mutate(timesChosen = c(rep(0,nSchools)))
+# 
+# 
+# 
+# for (i in 1:dim(schoolsChosen[1])){
+#   s_id <- as.numeric(schoolsChosen[i,1])
+#   timesChosen <- as.numeric(schoolsChosen[i,2])
+#   schoolRow <- uniqueSchools[uniqueSchools[,"schoolid"] == s_id,] 
+#   schoolRow[1,2] <- timesChosen
+#   
+#   rowIndex <- which(uniqueSchools$schoolid == s_id)
+#   
+#   uniqueSchools[rowIndex,] <- schoolRow
+#   
+# }
+#   
+#   
+# 
+# marketShare <- cbind(rep(1,nSchools),uniqueSchools,schoolsChosen[,"n"])
+# colnames(marketShare) <- c("market", "schoolid","timesChosen")
+# 
+# marketShare <- marketShare %>%
+#   mutate(share = timesChosen / nStudents)
+# 
+# ###########################################################################
+
+```
+
+```{r Testing loop to first 3 markets}
+# # for (i in 1:3){
+#   
+#   mkt <- data_market_share[data_market_share[,"market"] == i,]
+#   
+#   uniqueSchools <- mkt[,"schoolid"] %>%
+#     unique()
+#   
+#   
+#   uniqueStudent <- mkt[,"studentid"] %>%
+#     unique()
+#   
+#   schoolsChosen <- mkt[mkt[,"choice"] == 1,] %>%
+#     count(schoolid)
+#     
+#   nStudents <- dim(uniqueStudent)[1]
+#   nSchools <- dim(uniqueSchools)[1]
+#   
+#   
+#   
+#   marketShare <- cbind(rep(i,nSchools),uniqueSchools,schoolsChosen[,"n"])
+#   
+#   
+#   colnames(marketShare) <- c("market", "schoolid","timesChosen")
+#   
+#   marketShare <- marketShare %>%
+#     mutate(share = timesChosen / nStudents)
+#   
+#   sharesByMarket <- rbind(sharesByMarket,marketShare)
+#     
+# }
+```
+
+
